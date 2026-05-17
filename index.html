@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+    <meta charset="UTF-8">
+    <title>ΟΤΕ - Υπεύθυνη Δήλωση</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        /* Εισαγωγή Δεδομένων */
+        body { font-family: 'Segoe UI', Arial, sans-serif; background-color: #f0f2f5; margin: 0; padding: 20px; }
+        .no-print-area { max-width: 800px; margin: 0 auto 30px auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .input-group { margin-bottom: 15px; }
+        label { display: block; font-size: 12px; font-weight: bold; margin-bottom: 5px; color: #444; }
+        input[type="text"] { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+        
+        .radio-group { background: #f8fafc; padding: 15px; border: 1px solid #e2e8f0; border-radius: 6px; margin-bottom: 15px; }
+        .radio-option { display: flex; align-items: center; margin-bottom: 8px; font-size: 13px; cursor: pointer; }
+        .radio-option input { margin-right: 10px; }
+
+        #sig-canvas { border: 1px solid #ccc; background: #fff; cursor: crosshair; touch-action: none; margin-top: 10px; width: 100%; max-width: 500px; }
+        
+        .button-row { display: flex; gap: 10px; margin-top: 20px; }
+        .btn-main { flex: 1; color: white; border: none; padding: 15px; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 16px; text-transform: uppercase; }
+        .btn-create { background-color: #ff7f50; }
+        .btn-print { background-color: #0054a6; display: none; } /* Εμφανίζεται μετά τη δημιουργία */
+
+        /* Στυλ για το κουμπί της τοποθεσίας */
+        .btn-gps {
+            width: 100%;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            padding: 12px;
+            font-weight: bold;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-bottom: 15px;
+            font-size: 14px;
+            text-transform: uppercase;
+        }
+        .btn-gps:disabled {
+            background-color: #6c757d;
+            cursor: not-allowed;
+        }
+
+        /* Μορφοποίηση Α4 */
+        #a4-page {
+            display: none;
+            width: 210mm; height: 297mm;
+            padding: 20mm 25mm; margin: 20px auto;
+            background: white; box-shadow: 0 0 15px rgba(0,0,0,0.3);
+            box-sizing: border-box; color: #000;
+            font-family: Arial, sans-serif;
+            position: relative;
+        }
+
+        .header-table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
+        .logo-col { width: 35%; text-align: left; vertical-align: middle; }
+        .title-col { width: 65%; text-align: center; vertical-align: middle; }
+
+        /* Χρήση καθαρού URL για το Logo ώστε να μην κολλάει ο κώδικας */
+        .ote-logo-img { width: 140px; height: auto; }
+        
+        .title-section h1 { font-size: 16px; margin: 0; text-transform: uppercase; }
+        .title-section h2 { font-size: 14px; margin: 3px 0; text-transform: uppercase; }
+        .title-section p { font-size: 14px; margin: 0; font-weight: bold; }
+        .instruction { font-size: 10.5px; margin-top: 10px; }
+
+        .gray-bar { background: #a6a6a6; color: white; padding: 6px 12px; font-weight: bold; font-size: 13px; margin: 20px 0; }
+        .main-text { font-size: 14px; line-height: 1.7; text-align: justify; }
+        .dynamic-data { font-weight: bold; border-bottom: 1px solid #000; padding: 0 2px; }
+        
+        .check-item { display: flex; align-items: flex-start; margin: 12px 0 12px 15px; font-size: 13.5px; }
+        .box { width: 16px; height: 16px; border: 1.2px solid #000; margin-right: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-weight: bold; font-size: 14px; }
+
+        .footer { margin-top: 50px; font-size: 14px; }
+        .date-box { font-family: monospace; font-size: 16px; font-weight: bold; letter-spacing: 2px; border: 1px solid #000; padding: 2px 5px; }
+        
+        .sig-container { position: relative; height: 120px; margin-top: 10px; }
+        #out_sig_name { font-weight: bold; font-size: 14px; margin-bottom: 5px; display: block; }
+        #final-signature { position: absolute; top: 20px; left: 40px; max-width: 180px; max-height: 70px; }
+        .sig-line { border-top: 1px solid #000; width: 300px; margin-top: 75px; }
+
+        @media print {
+            .no-print-area { display: none !important; }
+            body { background: white; padding: 0; }
+            #a4-page { display: block !important; margin: 0; box-shadow: none; }
+            @page { size: A4; margin: 0; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="no-print-area">
+    <h2>Είσοδος Στοιχείων</h2>
+    <div class="input-group"><label>ΟΝΟΜΑΤΕΠΩΝΥΜΟ</label><input type="text" id="in_name"></div>
+    <div style="display:flex; gap:10px;">
+        <div class="input-group" style="flex:1;"><label>ΑΔΤ (έως 10 χαρακτήρες)</label><input type="text" id="in_adt" maxlength="10"></div>
+        <div class="input-group" style="flex:1;"><label>ΠΕΡΙΟΧΗ</label><input type="text" id="in_area"></div>
+    </div>
+    <div class="input-group"><label>ΔΙΕΥΘΥΝΣΗ</label><input type="text" id="in_address"></div>
+    <div class="input-group"><label>Τ.Κ.</label><input type="text" id="in_tk" maxlength="5" oninput="this.value = this.value.replace(/[^0-9]/g, '')"></div>
+    
+    <button type="button" id="gps-btn" class="btn-gps" onclick="fetchGPSLocation()">📍 Αυτόματη Εύρεση Τοποθεσίας & ΤΚ</button>
+
+    <label>ΕΠΙΛΟΓΗ ΚΟΣΤΟΥΣ</label>
+    <div class="radio-group">
+        <label class="radio-option"><input type="radio" name="cost_choice" value="i" checked> i) Επιβαρύνουν αποκλειστικά την ΟΤΕ Α.Ε.</label>
+        <label class="radio-option"><input type="radio" name="cost_choice" value="ii"> ii) Δεν επιβαρύνουν την ΟΤΕ Α.Ε.</label>
+    </div>
+
+    <label>ΥΠΟΓΡΑΦΗ ΠΕΛΑΤΗ</label>
+    <canvas id="sig-canvas" width="500" height="150"></canvas>
+    <br>
+    <button onclick="clearCanvas()" style="padding: 5px 10px; cursor: pointer;">Καθαρισμός</button>
+
+    <div class="button-row">
+        <button class="btn-main btn-create" onclick="renderA4()">ΔΗΜΙΟΥΡΓΙΑ</button>
+        <button id="print-btn" class="btn-main btn-print" onclick="window.print()">ΑΠΟΘΗΚΕΥΣΗ</button>
+    </div>
+</div>
+
+<div id="a4-page">
+    <table class="header-table">
+        <tr>
+            <td class="logo-col">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/e/e4/OTE_logo.svg" alt="Logo OTE" class="ote-logo-img">
+            </td>
+            <td class="title-col">
+                <div class="title-section">
+                    <h1>ΥΠΕΥΘΥΝΗ ΔΗΛΩΣΗ</h1>
+                    <h2>ΔΙΑΧΕΙΡΙΣΤΗ / ΕΚΠΡΟΣΩΠΟΥ ΓΕΝΙΚΗΣ ΣΥΝΕΛΕΥΣΗΣ</h2>
+                    <p>ΠΡΩΤΟΤΥΠΟ</p>
+                    <div class="instruction">(ΥΠΟΓΡΑΦΕΤΑΙ ΥΠΟΧΡΕΩΤΙΚΑ <u>ΜΟΝΟ ΜΙΑ</u> ΑΠΟ ΤΙΣ ΔΥΟ ΕΠΙΛΟΓΕΣ)</div>
+                </div>
+            </td>
+        </tr>
+    </table>
+
+    <div class="gray-bar">ΕΠΙΛΟΓΗ (Α) - ΕΓΚΡΙΝΩ ΑΜΕΣΗ ΕΝΑΡΞΗ ΕΡΓΑΣΙΩΝ</div>
+
+    <div class="main-text">
+        Ο/Η κάτωθι υπογεγραμμένος/η <span id="out_name" class="dynamic-data"></span>, με ΑΔΤ <span id="out_adt" class="dynamic-data"></span>, 
+        κάτοικος <span id="out_area" class="dynamic-data"></span>, Οδός <span id="out_address" class="dynamic-data"></span>, Τ.Κ. <span id="out_tk" class="dynamic-data"></span> 
+        <br><br>
+        υπό την ιδιότητά μου ως Διαχειριστής, Εκπρόσωπος Γενικής Συνέλευσης του κτιρίου που αναφέρεται στη Σελίδα 1 της παρούσας
+        <br><br>
+        («ΣΤΟΙΧΕΙΑ ΚΤΙΡΙΟΥ») δηλώνω ότι <b>έλαβα γνώση:</b>
+        <br><br>
+        <b>1)</b> της ανωτέρω Έκθεσης και των απαιτούμενων εργασιών από την ΟΤΕ Α.Ε. στους κοινόκτητους/κοινόχρηστους χώρους του κτιρίου , για την κατασκευή Οπτικού Κατανεμητή ή/και Οπτικής Ίνας για την παροχή υπηρεσίας Fiber To The Home (FTTH) στο κτίριο.
+        <br>
+        <b>2)</b> ότι το κόστος των εργασιών και των υλικών κατασκευής για την παροχή της υπηρεσίας Fiber To The Home (FTTH) στους κοινόκτητους/κοινόχρηστους χώρους του οικοπέδου <b>(παρακαλώ να σηματοδοτηθεί μία από τις παρακάτω επιλογές αναλόγως της περίπτωσης του κτιρίου):</b>
+    </div>
+
+    <div class="check-group">
+        <div class="check-item"><div class="box" id="box_i"></div><div>i) επιβαρύνουν αποκλειστικά την ΟΤΕ Α.Ε η οποία θα αποκαταστήσει πλήρως τους κοινόχρηστους/κοινόκτητους χώρους του κτήρίου που επηρεάζονται από των ανωτέρων εργασιών </div></div>
+        <div class="check-item"><div class="box" id="box_ii"></div><div>ii) δεν επιβαρύνουν την ΟΤΕ Α.Ε.</div></div>
+    </div>
+	
+	<div class="main-text">
+        <b>και εγκρίνω την άμεση έναρξη </b> των ανωτέρω εργασιών
+    </div>
+
+    <div class="footer">
+        Τόπος & Ημερομηνία: <span id="out_place" style="font-weight:bold;"></span> ........................... <span id="out_date" class="date-box"></span>
+        <br><br><br>
+        Ονοματεπώνυμο & Υπογραφή:
+        <div class="sig-container">
+            <span id="out_sig_name"></span>
+            <img id="final-signature" src="" alt="">
+            <div class="sig-line"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const canvas = document.getElementById('sig-canvas');
+    const ctx = canvas.getContext('2d');
+    let drawing = false;
+
+    canvas.addEventListener('mousedown', () => drawing = true);
+    canvas.addEventListener('mouseup', () => { drawing = false; ctx.beginPath(); });
+    canvas.addEventListener('mousemove', draw);
+    canvas.addEventListener('touchstart', (e) => { drawing = true; e.preventDefault(); });
+    canvas.addEventListener('touchend', () => { drawing = false; ctx.beginPath(); });
+    canvas.addEventListener('touchmove', (e) => { draw(e); e.preventDefault(); });
+
+    function draw(e) {
+        if (!drawing) return;
+        const rect = canvas.getBoundingClientRect();
+        const x = (e.clientX || e.touches[0].clientX) - rect.left;
+        const y = (e.clientY || e.touches[0].clientY) - rect.top;
+        ctx.lineWidth = 2; ctx.lineCap = 'round'; ctx.strokeStyle = '#000';
+        ctx.lineTo(x, y); ctx.stroke(); ctx.beginPath(); ctx.moveTo(x, y);
+    }
+
+    function clearCanvas() { ctx.clearRect(0, 0, canvas.width, canvas.height); }
+
+    // ΣΥΝΑΡΤΗΣΗ GPS ΚΑΙ ΤΟΠΟΘΕΣΙΑΣ
+    function fetchGPSLocation() {
+        const gpsBtn = document.getElementById('gps-btn');
+        const areaIn = document.getElementById('in_area');
+        const addressIn = document.getElementById('in_address');
+        const tkIn = document.getElementById('in_tk');
+
+        gpsBtn.innerText = "🔄 Γίνεται εντοπισμός GPS...";
+        gpsBtn.disabled = true;
+
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                function(position) {
+                    const lat = position.coords.latitude;
+                    const lon = position.coords.longitude;
+
+                    const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&addressdetails=1`;
+
+                    fetch(url, {
+                        headers: { 'Accept-Language': 'el' }
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data && data.address) {
+                            const road = data.address.road || "";
+                            const houseNumber = data.address.house_number || "";
+                            const fullAddress = houseNumber ? `${road} ${houseNumber}` : road;
+
+                            const city = data.address.city || data.address.town || data.address.village || data.address.suburb || "";
+                            const postcode = data.address.postcode || "";
+
+                            if (fullAddress) addressIn.value = fullAddress;
+                            if (city) areaIn.value = city;
+                            if (postcode) tkIn.value = postcode.replace(/\s/g, '');
+
+                            gpsBtn.innerText = "✅ Τοποθεσία Συμπληρώθηκε!";
+                        } else {
+                            alert("Δεν ήταν δυνατή η ανάλυση της διεύθυνσης.");
+                            gpsBtn.innerText = "📍 Δοκιμάστε ξανά";
+                        }
+                        gpsBtn.disabled = false;
+                    })
+                    .catch(error => {
+                        console.error("Error:", error);
+                        alert("Σφάλμα δικτύου. Βεβαιωθείτε ότι έχετε πρόσβαση στο internet.");
+                        gpsBtn.innerText = "📍 Δοκιμάστε ξανά";
+                        gpsBtn.disabled = false;
+                    });
+                },
+                function(error) {
+                    gpsBtn.disabled = false;
+                    gpsBtn.innerText = "📍 Δοκιμάστε ξανά";
+                    switch(error.code) {
+                        case error.PERMISSION_DENIED:
+                            alert("⚠️ Πρέπει να επιτρέψετε την πρόσβαση στην τοποθεσία από τις ρυθμίσεις της συσκευής σας.");
+                            break;
+                        case error.POSITION_UNAVAILABLE:
+                            alert("⚠️ Η τοποθεσία δεν είναι διαθέσιμη. Ενεργοποιήστε το GPS.");
+                            break;
+                        case error.TIMEOUT:
+                            alert("⚠️ Έληξε το χρονικό όριο αναμονής του GPS.");
+                            break;
+                        default:
+                            alert("⚠️ Παρουσιάστηκε άγνωστο σφάλμα τοποθεσίας.");
+                    }
+                },
+                {
+                    enableHighAccuracy: true,
+                    timeout: 10000,
+                    maximumAge: 0
+                }
+            );
+        } else {
+            alert("Το Geolocation δεν υποστηρίζεται από αυτή τη συσκευή.");
+            gpsBtn.disabled = false;
+        }
+    }
+
+    function renderA4() {
+        const nameVal = document.getElementById('in_name').value || "......................";
+        document.getElementById('out_name').innerText = nameVal;
+        document.getElementById('out_sig_name').innerText = nameVal;
+        document.getElementById('out_adt').innerText = document.getElementById('in_adt').value || "........";
+        document.getElementById('out_area').innerText = document.getElementById('in_area').value || "........";
+        document.getElementById('out_address').innerText = document.getElementById('in_address').value || "........";
+        document.getElementById('out_tk').innerText = document.getElementById('in_tk').value || "........";
+        document.getElementById('out_place').innerText = document.getElementById('in_area').value || "........";
+        
+        const d = new Date();
+        document.getElementById('out_date').innerText = `${String(d.getDate()).padStart(2,'0')} / ${String(d.getMonth()+1).padStart(2,'0')} / ${d.getFullYear()}`;
+        
+        const choice = document.querySelector('input[name="cost_choice"]:checked').value;
+        document.getElementById('box_i').innerText = (choice === 'i') ? '✓' : '';
+        document.getElementById('box_ii').innerText = (choice === 'ii') ? '✓' : '';
+        
+        document.getElementById('final-signature').src = canvas.toDataURL();
+        
+        const page = document.getElementById('a4-page');
+        page.style.display = 'block';
+        document.getElementById('print-btn').style.display = 'block';
+
+        // ΑΥΤΟΜΑΤΗ ΑΠΟΘΗΚΕΥΣΗ ΩΣ ΕΙΚΟΝΑ
+        setTimeout(() => {
+            html2canvas(page, { 
+                scale: 2,
+                useCORS: true,
+                logging: true
+            }).then(canvas => {
+                const link = document.createElement('a');
+                link.download = `Ypeythini_Dilosi_${nameVal}.png`;
+                link.href = canvas.toDataURL("image/png");
+                link.click();
+            });
+        }, 500);
+    }
+</script>
+
+</body>
+</html>
